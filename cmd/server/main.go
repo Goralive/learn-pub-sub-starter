@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -17,6 +19,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Can't connect to rabbitmq: %v", err)
 	}
+	channel, err := connection.Channel()
+	if err != nil {
+		log.Fatalf("Can't create channel %v", err)
+	}
+	pubsub.PublishJSON(channel, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
+		IsPaused: true,
+	})
+
 	defer connection.Close()
 	log.Println("Connection success")
 
