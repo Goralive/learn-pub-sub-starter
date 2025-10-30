@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
@@ -31,8 +29,43 @@ func main() {
 	if pubErr != nil {
 		log.Fatalf("Error during declaration for topic: %v", pubErr)
 	}
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
-	fmt.Println("Connection closed.")
+
+	gameState := gamelogic.NewGameState(username)
+	for {
+		userInput := gamelogic.GetInput()
+		if len(userInput) == 0 {
+			continue
+		}
+		switch userInput[0] {
+		case "move":
+			_, err := gameState.CommandMove(userInput)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+		case "spawn":
+			err := gameState.CommandSpawn(userInput)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+		case "status":
+			gameState.CommandStatus()
+
+		case "help":
+			gamelogic.PrintClientHelp()
+
+		case "spam":
+			fmt.Println("Spamming not allowed yet!")
+
+		case "quit":
+			gamelogic.PrintQuit()
+			return
+
+		default:
+			fmt.Println("unknown command")
+		}
+	}
 }
