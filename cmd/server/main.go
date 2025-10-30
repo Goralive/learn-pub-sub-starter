@@ -60,5 +60,11 @@ func main() {
 		if err != nil {
 			log.Printf("can't publish message: %v", err)
 		}
+
+		_, _, declareErr := pubsub.DeclareAndBind(connection, routing.ExchangePerilTopic, routing.GameLogSlug, "game_logs", pubsub.Durable)
+
+		if declareErr != nil {
+			log.Printf("can't declare topic: %v", err)
+		}
 	}
 }
