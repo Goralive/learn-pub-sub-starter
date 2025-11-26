@@ -31,6 +31,10 @@ func main() {
 	}
 
 	gameState := gamelogic.NewGameState(username)
+	pauseErr := pubsub.SubscribeJSON(connection, routing.ExchangePerilDirect, fmt.Sprintf("pause.%s", username), routing.PauseKey, pubsub.Transient, handlerPause(gameState))
+	if pauseErr != nil {
+		log.Fatalf("Can't subscribe to pause topic: %v", pauseErr)
+	}
 	for {
 		userInput := gamelogic.GetInput()
 		if len(userInput) == 0 {
@@ -67,5 +71,12 @@ func main() {
 		default:
 			fmt.Println("unknown command")
 		}
+	}
+}
+
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	return func(ps routing.PlayingState) {
+		defer fmt.Printf("> ")
+		gs.HandlePause(ps)
 	}
 }

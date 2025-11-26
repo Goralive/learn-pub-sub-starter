@@ -2,10 +2,7 @@ package pubsub
 
 import (
 	"encoding/json"
-	"fmt"
 
-	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
-	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -69,11 +66,4 @@ func SubscribeJSON[T any](
 		}
 	}()
 	return nil
-}
-
-func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
-	return func(ps routing.PlayingState) {
-		defer fmt.Printf("> ")
-		gs.HandlePause(ps)
-	}
 }
