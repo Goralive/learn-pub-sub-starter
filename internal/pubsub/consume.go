@@ -1,13 +1,20 @@
 package pubsub
 
-import amqp "github.com/rabbitmq/amqp091-go"
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
+	amqp "github.com/rabbitmq/amqp091-go"
+)
 
 func DeclareAndBind(
 	conn *amqp.Connection,
 	exchange,
 	queueName,
 	key string,
-	queueType simpleQueueType, // an enum to represent "durable" or "transient"
+	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
 ) (*amqp.Channel, amqp.Queue, error) {
 	channel, err := conn.Channel()
 	if err != nil {
@@ -31,4 +38,42 @@ func DeclareAndBind(
 	}
 
 	return channel, queue, nil
+}
+
+func SubscribeJSON[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType,
+	handler func(T),
+) error {
+	ch, _, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
+	if err != nil {
+		return err
+	}
+	deliveries, err := ch.Consume(queueName, "", false, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for d := range deliveries {
+			var msg T
+			if err := json.Unmarshal(d.Body, &msg); err != nil {
+				d.Ack(false)
+				continue
+			}
+			handler(msg)
+			d.Ack(false)
+		}
+	}()
+	return nil
+}
+
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	return func(ps routing.PlayingState) {
+		defer fmt.Printf("> ")
+		gs.HandlePause(ps)
+	}
 }
